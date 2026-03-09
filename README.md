@@ -21,9 +21,12 @@ Each row represents an genomic segment shared between two individuals that is in
 
 # Software used and Dependencies
 
+Need to install the following Python libraries:
+- pandas
 
 # Scripts
 
+- `parse_ibd.py`: A Python script that parses the IBD data and extracts the pairs of individuals and their corresponding IBD segment lengths in centiMorgans (cM). The script takes an input TSV file containing the IBD data and produces an output file with the parsed information.
 
 
 # Workflow
