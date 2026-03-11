@@ -13,14 +13,13 @@ Name: Maria Niki Chatzantoni
 Description: 
 This script is designed to parse IBD (Identity by Descent) data
 from a specified input file and convert it into a format suitable
-for visualization using Circos. The script reads the IBD data, processes it
-and outputs a file that can be used to create Circos plots.
+for later analysis. The script reads the IBD data, processes it
+and outputs a file that can be used for further analysis.
 
 Procedure:
 1. Read command line arguments  
 2. Parse the IBD data
 3. Write the output file with the pairs and their lengths in cM
-
 
 User-defined functions: get_arguments(), parse_ibd(), write_output(), main()
 Non-standard modules: pandas

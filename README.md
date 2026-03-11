@@ -18,16 +18,21 @@ The dataset contains identity by descent (IBD) segments identified in 4,248 anci
 
 Each row represents an genomic segment shared between two individuals that is inherited from a common ancestor.  
 
+The metadata about the individuals and their Master IDs can be found here: [Metadata](https://static-content.springer.com/esm/art%3A10.1038%2Fs41588-023-01582-w/MediaObjects/41588_2023_1582_MOESM4_ESM.xlsx)
+
+Lastly, the AADR (Ancient Admixture and Relatedness) data, which informs about the populations of the individuals depending on their Master IDs, can be found here: [AADR Data](https://lunduniversityo365-my.sharepoint.com/personal/er2374el_lu_se/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fer2374el%5Flu%5Fse%2FDocuments%2FStudents%2FBINP29%20%2D%20DNA%20Sequencing%20Informatics%20II%2FStudent%20projects%2FProjetcFiles%2FAADR%5F54%2E1&viewid=31986752%2D1a4a%2D4d9b%2D995e%2Db5bbf4dec0b9),  under the name `AADR Annotations 2025.xlsx`
 
 # Software used and Dependencies
 
 Need to install the following Python libraries:
 - pandas
+- openpyxl
 
 # Scripts
 
 - `parse_ibd.py`: A Python script that parses the IBD data and extracts the pairs of individuals and their corresponding IBD segment lengths in centiMorgans (cM). The script takes an input TSV file containing the IBD data and produces an output file with the parsed information.
-
+- `parse_metadata.py`: A Python script that parses the metadata and finds the master id for each individual. The script takes an input Excel file containing the metadata and produces an output file with the parsed information.
+- `parse_aadr.py`: A Python script that parses the AADR data and converts it into a format with information about individuals and their populations. The script takes an input Excel file containing the AADR data and produces an output file with the parsed information.
 
 # Workflow
 
