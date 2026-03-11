@@ -38,5 +38,10 @@ Need to install the following Python libraries:
 
 # Workflow
 
+1. Run `parse_ibd.py` to parse the IBD data and create an output file with the relevant information.
+2. Run `parse_metadata.py` to parse the metadata and create an output file with the master IDs for each individual.
+3. Run `parse_aadr.py` to parse the AADR data and create an output file with the population information for each individual.
+4. Run `build_database.py` to merge the parsed IBD, metadata, and AADR files and create a SQLite database with the combined information.    
+
 
 

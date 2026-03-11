@@ -36,15 +36,15 @@ def get_arguments():
 	script_name = sys.argv[0] # get the name of the script
 	print(
 		f"You are using the script: {script_name}. "
-		"This script does not require any command line arguments and only takes an optional table name as an argument. "
-		"It will read the input files from the results folder and create a database in the results/database folder. "
+		"This script does not require any command line arguments and only takes an optional table name as an argument.\n"
+		"It will read the input files from the results folder and create a database in the results/database folder.\n"
 		"Thank you for your patience while the database is being built!"
 	)
 
 	# check if the useer gave unnecessary command line arguments
 	if len(sys.argv) != 1 and len(sys.argv) != 2:
 		raise ValueError(
-			"This script does not require any command line arguments and only takes an optional table name as an argument. "
+			"This script does not require any command line arguments and only takes an optional table name as an argument.\n "
 			"Please run the script without any arguments or with a single argument for the table name. Thank you!"
 		)
 		
@@ -59,7 +59,7 @@ def get_arguments():
 		# if a file doesn't exist raise an error
 		if not os.path.isfile(file):
 			raise FileNotFoundError(f"Input file {file} not found. Please make sure you read the README and"
-             "run the parsing scripts to create the input files. Thank you!")
+             "run the parsing scripts to create the input files.\n Thank you!")
 	
 	# set the output directory 
 	output_dir = "results/database" 
@@ -115,37 +115,46 @@ def add_group_column(ibd_df, metadata_df, aadr_df, individual, group_column):
 
 # main function for building the database
 def main():
+	try:
+		# first get the input files, table name and the script name
+		input_files, table_name, script_name = get_arguments()
 
-	# first get the input files, table name and the script name
-	input_files, table_name, script_name = get_arguments()
+		# set output db path
+		output_dir = "results/database"
+		os.makedirs(output_dir, exist_ok=True)
+		db_file = os.path.join(output_dir, f"{table_name}.db")
 
-	# set output db path
-	output_dir = "results/database"
-	os.makedirs(output_dir, exist_ok=True)
-	db_file = os.path.join(output_dir, f"{table_name}.db")
+		# read the input files
+		aadr_df = pd.read_csv(input_files['aadr_file'], sep='\t')
+		metadata_df = pd.read_csv(input_files['metadata_file'], sep='\t')
+		ibd_df = pd.read_csv(input_files['ibd_file'], sep='\t')
 
-	# read the input files
-	aadr_df = pd.read_csv(input_files['aadr_file'], sep='\t')
-	metadata_df = pd.read_csv(input_files['metadata_file'], sep='\t')
-	ibd_df = pd.read_csv(input_files['ibd_file'], sep='\t')
+		# add group information for ind1 and ind2
+		merged = add_group_column(ibd_df, metadata_df, aadr_df, 'ind1', 'group1')
+		merged = add_group_column(merged, metadata_df, aadr_df, 'ind2', 'group2')
 
-	# add group information for ind1 and ind2
-	merged = add_group_column(ibd_df, metadata_df, aadr_df, 'ind1', 'group1')
-	merged = add_group_column(merged, metadata_df, aadr_df, 'ind2', 'group2')
+		# keep only the columns we need
+		merged = merged[['ind1', 'group1', 'ind2', 'group2', 'lengthM']]
 
-	# keep only the columns we need
-	merged = merged[['ind1', 'group1', 'ind2', 'group2', 'lengthM']]
+		print(f"Combined table has {len(merged)} rows")
 
-	print(f"Combined table has {len(merged)} rows")
+		# save to sqlite database
+		print(f"Building SQLite database: {table_name}.db. You can find it in the results/database folder")
+		conn = sqlite3.connect(os.path.join("results/database", table_name + ".db"))
+		merged.to_sql(table_name, conn, if_exists="replace", index=False)
+		conn.close()
 
-	# save to sqlite database
-	print(f"Building SQLite database: {table_name}.db. You can find it in the results/database folder")
-	conn = sqlite3.connect(os.path.join("results/database", table_name + ".db"))
-	merged.to_sql(table_name, conn, if_exists="replace", index=False)
-	conn.close()
+		# if there are any missing info we print a message regarding that and how many individuals have missing info
+		if merged['group1'].isnull().sum() + merged['group2'].isnull().sum() > 0: 
+			missing_rows = merged['group1'].isnull().sum() + merged['group2'].isnull().sum()
+			print(f"There is some missing group information for some individuals in the database.\n"
+				"This is because we don't have group information for all individuals in the AADR data. They are shown as NULL in the database.\n"
+				f"The number of rows with missing group information is {missing_rows}.")
 
-	print(f"Database successfully created at {table_name}.db")
+		print(f"Database successfully created at {table_name}.db\nThank you for using the script!")
 
+	except Exception as e:
+		print("An error occurred:", e)
 
 if __name__ == "__main__":
 	main()
