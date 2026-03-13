@@ -16,7 +16,7 @@ countries, adjust connection thresholds and generate circos plots. The app reads
 on user input and generates circos plots.
 
 User-defined functions: 
-Non-standard modules: streamlit, pandas, sqlite3, pycirclize, matplotlib
+Non-standard modules: streamlit, pandas, sqlite3, pycirclize, matplotlib, circos_plot
 
 Input:
 - `database_file`: The path to the input database file containing the IBD connections and group information. 
@@ -26,3 +26,10 @@ Output:
 - An interactive Streamlit app that allows users to explore the IBD connections and generate circos plots.
 
 '''
+
+import streamlit as st
+import pandas as pd
+from circos_plot import parse_database, filter_by_selection, create_circos_plot
+ 
+st.set_page_config( page_title="IBDConnect", page_icon="🫆", layout="wide")
+
