@@ -9,7 +9,7 @@ This script creates interactive circos plots for the IBD connections between ind
 Users can select specific populations or individuals, adjust connection thresholds, and generate circos plots.
 The script reads the database, filters data based on user input, and generates publication-quality circos plots.
 
-User-defined functions: get_arguments(), parse_database(), filter_by_selection(), create_circos_plot()
+User-defined functions: parse_database(), filter_by_selection(), create_circos_plot()
 Non-standard modules: pycirclize, pandas, sqlite3, matplotlib
 
 Input:
@@ -23,17 +23,12 @@ Output:
 
 from pycirclize import Circos
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from matplotlib.colors import to_rgba
 import pandas as pd
 import sqlite3
-import sys
-import os
+
 
 # function to read the database and create the matrices for individuals and populations
 def parse_database(input_file, min_length):
-
-# matrix for individuals and their connections
 
     # read the database file into a pandas dataframe
     conn = sqlite3.connect(input_file)
@@ -94,14 +89,13 @@ def filter_by_selection(matrix_ind, matrix_pop, mode, selected_value=None, selec
         if selected_year_min is not None and selected_year_max is not None:
             filtered = filtered[((filtered["year1"] >= selected_year_min) & (filtered["year1"] <= selected_year_max)) |
                 ((filtered["year2"] >= selected_year_min) & (filtered["year2"] <= selected_year_max))]
-    
+   
+    else:
+        raise ValueError("Mode must be either individuals or populations. Please select a valid mode and try again.")
+
     # if after filtering there are no connections left we raise an error 
     if filtered.empty:
         raise ValueError("No connections found for this selection. Please adjust your filters and try again.")
-    
-    # if the mode is not individuals or populations we raise an error
-    if mode not in ["individuals", "populations"]:
-        raise ValueError("Mode must be either individuals or populations. Please select a valid mode and try again.")
     
     return filtered
 
@@ -109,16 +103,19 @@ def filter_by_selection(matrix_ind, matrix_pop, mode, selected_value=None, selec
 # function to create the circos plot for individuals or populations based on the mode
 def create_circos_plot(filtered, mode):
 
-    # if no data return an empty plot with a message
-    if filtered.empty:
-        fig, ax = plt.subplots(figsize=(6, 4))
-        ax.text(0.5, 0.5, "No connections found for this selection.", ha="center", va="center", fontsize=16, color="mediumvioletred")
-        ax.axis("off")
+    # save a copy before groupby for the country matrix later
+    filtered_og = filtered.copy()
 
+# if the mode is individuals
+
+    if mode == "individuals":
+        # use the individual ids as nodes for the circos plot
+        nodes = sorted(pd.concat([filtered["ind1"], filtered["ind2"]]).unique())
     else:
-        # get the unique populations from the filtered matrix
-        # we sum the lengthM values for the same population pairs to get the total connection between them
-        filtered = filtered.groupby(["group1", "group2"], as_index=False)["lengthM"].sum() 
+        # if the mode is populations use the population ids as nodes for the circos plot
+        # we group by the population pairs and sum the lengthM values to get the total connection 
+        filtered = filtered.groupby(["group1", "group2"], as_index=False)["lengthM"].sum()
+        nodes = sorted(pd.concat([filtered["group1"], filtered["group2"]]).unique())
 
     # symmetric matrix for the connections between individuals or populations
     matrix = pd.DataFrame(0.0, index=nodes, columns=nodes)
@@ -135,15 +132,19 @@ def create_circos_plot(filtered, mode):
             matrix.at[data["group2"], data["group1"]] += data["lengthM"]
 
 # do the same for the countries 
-    add_countries = filtered.groupby(["country1", "country2"], as_index=False)["lengthM"].sum()
+
+    # group by the country pairs and sum the lengthM values to get the total connection between countries
+    add_countries = filtered_og.groupby(["country1", "country2"], as_index=False)["lengthM"].sum()
+    # get the unique countries as nodes for the country matrix
     countries = sorted(pd.concat([add_countries["country1"], add_countries["country2"]]).unique())
 
+    # symmetric matrix for the connections between countries
     country_matrix = pd.DataFrame(0.0, index=countries, columns=countries)
     for i, data in add_countries.iterrows():
         country_matrix.at[data["country1"], data["country2"]] += data["lengthM"]
         country_matrix.at[data["country2"], data["country1"]] += data["lengthM"]
 
-    # create the circos plot
+# create the circos plot
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 9)) # have 2 plots side by side
 
@@ -159,7 +160,7 @@ def create_circos_plot(filtered, mode):
     ax1.set_title(f"IBD connections — colored by {group_label}", fontsize=11, pad=10)
 
     # make the plot for the connections between countries
-    circos2 = Circos.chord_diagram(country_matrix, space=5, cmap="tab10",
+    circos2 = Circos.chord_diagram(country_matrix, space=5, cmap="Pastel2",
         label_kws=dict(size=12), link_kws=dict(ec="black", lw=0.5, direction=1))
     circos2.plotfig(ax=ax2)
     ax2.set_title("IBD connections — colored by country", fontsize=11, pad=10)
@@ -167,3 +168,4 @@ def create_circos_plot(filtered, mode):
     fig.tight_layout() # fix the layout to not have overlap 
 
     return fig
+
