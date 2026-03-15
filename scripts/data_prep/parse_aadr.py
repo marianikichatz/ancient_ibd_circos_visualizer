@@ -124,7 +124,7 @@ def parse_aadr_data(input_file):
 
     master_id = df['Master ID'] # get the Master ID column from the dataframe
     group_id = df['Group ID'] # get the Group ID column from the dataframe
-    country = df['Political Entity'] # get the country column from the dataframe
+    country = df['Political Entity'].str.strip() # get the country column from the dataframe
     
     # convert BP (years before 1950) to actual year: actual_year = 1950 - BP
     # negative values mean BCE, positive mean CE
