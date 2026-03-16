@@ -206,14 +206,14 @@ if generate:
         # filter the data based on the user selections
         filtered = filter_by_selection( matrix_ind, matrix_pop, mode, selected_value=use_value, selected_country=use_country,
                 selected_year_min=selected_year_min, selected_year_max=selected_year_max)
-
-        # show how many connections are being plotted
-        st.write(f"Showing **{len(filtered)} IBD connections** for the selected filters.")
-        
+       
         # create and display the circos plot
         with st.spinner("Generating circos plot, this may take a moment..."):
-            fig, big, nodes, node_colors = create_circos_plot(filtered, mode, selected_value=use_value, max_nodes=max_nodes, ranking_method=ranking_method)
+            fig, big, nodes, node_colors, num_conn = create_circos_plot(filtered, mode, selected_value=use_value, max_nodes=max_nodes, ranking_method=ranking_method)
 
+         # show how many connections are being plotted
+        st.write(f"Showing **{num_conn} IBD connections** for the selected filters.")
+        
         st.pyplot(fig)
 
         fig.savefig("circos_plot.png", dpi=150, bbox_inches="tight")

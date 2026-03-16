@@ -192,6 +192,19 @@ def create_circos_plot(filtered, mode, selected_value=None, max_nodes=50, rankin
     # get the nodes to plot usin gthe function above
     nodes, filtered_data, big = get_nodes(filtered, mode, selected_value, max_nodes, ranking_method)
 
+    temp_df = filtered_data.copy() # make a copy of the filtered data for the circos plot
+
+# if mode is individuals 
+    if mode == "individuals":
+        # to get unique connections we keep only the rows where ind1 is less than ind2
+        remove_same = temp_df['ind1'].astype(str) < temp_df['ind2'].astype(str) 
+# if mode is populations we do the same but for populations 
+    else:
+        remove_same = temp_df['group1'].astype(str) < temp_df['group2'].astype(str)
+
+    unique_connections = temp_df[remove_same] # set the unique connections as the rows without the duplicate connections
+    numm_connections = len(unique_connections) # get the number of unique connections 
+
     cmap = plt.get_cmap("spring") # set colormap for the nodes and connections
     node_colors = [] # makae a list to store the colors for each node
     number_of_nodes = len(nodes) # get the number of nodes
@@ -206,7 +219,7 @@ def create_circos_plot(filtered, mode, selected_value=None, max_nodes=50, rankin
     matrix = pd.DataFrame(0.0, index=nodes, columns=nodes)
 
     # loop through the filtered data 
-    for index, row in filtered_data.iterrows():
+    for index, row in unique_connections.iterrows():
 
 # for individuals
         if mode == "individuals":
@@ -220,10 +233,11 @@ def create_circos_plot(filtered, mode, selected_value=None, max_nodes=50, rankin
         length = row["lengthM"] # get how long the IBD connection for this row
 
         # if the 1st node and the 2nd node are in the list of nodes 
-        if name1 in nodes:
-            if name2 in nodes:
+        if name1 in nodes and name2 in nodes:
                 matrix.at[name1, name2] = length # add the length of the IBD connection to the matrix at the position of name1 and name2
     
+    num_conn = len(unique_connections) # get the number of unique connections 
+
     number_of_nodes = len(nodes) # get the number of nodes
     space = 300/number_of_nodes # set the space between the nodes based on the number of nodes
 
@@ -258,4 +272,4 @@ def create_circos_plot(filtered, mode, selected_value=None, max_nodes=50, rankin
 
     fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
 
-    return fig, big, nodes, node_colors
+    return fig, big, nodes, node_colors, num_conn
