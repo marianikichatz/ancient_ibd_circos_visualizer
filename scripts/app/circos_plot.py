@@ -172,7 +172,7 @@ def get_nodes(filtered, mode, selected_value, max_nodes, ranking_method):
             all_nodes = sum1.add(sum2, fill_value=0) # add the sums from column 1 and column 2 to get the total IBD per node
 
             top = all_nodes.nlargest(max_nodes) # get the top nodes based on total IBD per node
-            nodes = [top.index] # set the nodes as the index of the top nodes
+            nodes = list(top.index) # set the nodes as the index of the top nodes
             what_keep1 = filtered[col1].isin(nodes) # check if the ind or pop in column 1 is in the top nodes
             what_keep2 = filtered[col2].isin(nodes) # same for column 2
             filtered = filtered[what_keep1 & what_keep2] # keep only the connections where both nodes are in the top nodes
@@ -223,7 +223,6 @@ def create_circos_plot(filtered, mode, selected_value=None, max_nodes=50, rankin
         if name1 in nodes:
             if name2 in nodes:
                 matrix.at[name1, name2] = length # add the length of the IBD connection to the matrix at the position of name1 and name2
-                matrix.at[name2, name1] = length # add the length of the IBD connection to the matrix at the position of name2 and name1
     
     number_of_nodes = len(nodes) # get the number of nodes
     space = 300/number_of_nodes # set the space between the nodes based on the number of nodes
@@ -241,7 +240,7 @@ def create_circos_plot(filtered, mode, selected_value=None, max_nodes=50, rankin
 
     # create the circos plot
 
-    fig = plt.figure(figsize=(16, 18)) # set the figure size
+    fig = plt.figure(figsize=(16, 22)) # set the figure size
     ax = fig.add_subplot(111, projection="polar") # make the plot a circular plot 
 
     color_dict = {} # dictionary to store the color for each node
@@ -255,8 +254,8 @@ def create_circos_plot(filtered, mode, selected_value=None, max_nodes=50, rankin
     # make the circos plot using the pycirclize library
     circos = Circos.chord_diagram(matrix, space=space, cmap=color_dict, label_kws=dict(size=10, orientation="vertical"), link_kws=dict(lw=0, alpha=0.8))
     circos.plotfig(ax=ax) 
-    ax.set_title(f"IBD connections — colored by {group_label}", fontsize=14, fontweight="bold", pad=200) # set the title
+    ax.set_title(f"IBD connections — colored by {group_label}", fontsize=14, fontweight="bold", pad=350) # set the title
 
-    fig.tight_layout()
+    fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
 
     return fig, big, nodes, node_colors

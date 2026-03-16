@@ -31,6 +31,7 @@ Need to install the following Python libraries:
 - openpyxl
 - pycirclize
 - matplotlib
+- numpy
 
 # Scripts
 

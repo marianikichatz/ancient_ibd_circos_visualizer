@@ -35,6 +35,7 @@ python3 build_database.py table_name[optional]
 '''
 
 import pandas as pd
+import numpy as np
 import sqlite3
 import os
 import sys
@@ -42,24 +43,20 @@ import sys
 def get_arguments():
 
 	script_name = sys.argv[0] # get the name of the script
-	print(
-		f"You are using the script: {script_name}. "
+	print(f"You are using the script: {script_name}. "
 		"This script does not require any command line arguments and only takes an optional table name as an argument.\n"
 		"It will read the input files from the results folder and create a database in the results/database folder.\n"
-		"Thank you for your patience while the database is being built!"
-	)
+		"Thank you for your patience while the database is being built!")
 
 	# check if the useer gave unnecessary command line arguments
 	if len(sys.argv) != 1 and len(sys.argv) != 2:
-		raise ValueError(
-			"This script does not require any command line arguments and only takes an optional table name as an argument.\n "
-			"Please run the script without any arguments or with a single argument for the table name. Thank you!"
-		)
+		raise ValueError("This script does not require any command line arguments and only takes an optional table name as an argument.\n "
+			"Please run the script without any arguments or with a single argument for the table name. Thank you!")
 		
 	
 	# set the input files
 	input_files = {'aadr_file': "results/parse_aadr/aadr_data.txt", 'metadata_file': "results/parse_metadata/metadata.txt",
-		'ibd_file': "results/parse_ibd/ibd_pairs_raw.txt"}
+			'ibd_file': "results/parse_ibd/ibd_pairs_raw.txt"}
 	
 	# check if the input files exist
 	for file in input_files.values():
@@ -141,6 +138,16 @@ def main():
 		merged = add_group_column(ibd_df, metadata_df, aadr_df, 'ind1', 'group1', 'country1', 'year1')
 		merged = add_group_column(merged, metadata_df, aadr_df, 'ind2', 'group2', 'country2', 'year2')
 
+		# we sort the ind, group, country and year columns for ind1 and ind2 to make sure we have one pair per connection
+		cols_to_fix = [(['ind1', 'ind2']), (['group1', 'group2']), (['country1', 'country2']), (['year1', 'year2'])]
+
+		# loop through the columns 
+		for col1, col2 in cols_to_fix:
+			merged[[col1, col2]] = np.sort(merged[[col1, col2]], axis=1) # sort the two columns in each pair to make sure we have one pair per connection 
+
+			# group by the columns and sum the lengthM to combine rows with the same pair of individuals, groups, countries and years
+			merged = merged.groupby(['ind1', 'ind2', 'group1', 'group2', 'country1', 'country2', 'year1', 'year2'], as_index=False).agg({'lengthM': 'sum'})
+       
 		# keep only the columns we need
 		merged = merged[['ind1', 'group1', 'country1', 'year1', 'ind2', 'group2', 'country2', 'year2', 'lengthM']]
 
