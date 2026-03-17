@@ -6,12 +6,12 @@
 
 Script name: build_database.py
 
-Version: 1.00
+Version: 2.00
 Date: 2026-03-11
 Name: Maria Niki Chatzantoni
 
 Description:
-This script combines the three parsed output files (aadr_data.txt, metadata.txt, ibd_pairs_raw.txt)
+This script combines the two parsed output files (aadr_data.txt and ibd_pairs_raw.txt)
 into a single SQLite database with a table that contains the IBD connections between 
 individuals, along with their group information.
 
@@ -39,6 +39,7 @@ import numpy as np
 import sqlite3
 import os
 import sys
+import glob
 
 def get_arguments():
 
@@ -53,18 +54,25 @@ def get_arguments():
 		raise ValueError("This script does not require any command line arguments and only takes an optional table name as an argument.\n "
 			"Please run the script without any arguments or with a single argument for the table name. Thank you!")
 		
-	
-	# set the input files
-	input_files = {'aadr_file': "results/parse_aadr/aadr_data.txt", 'metadata_file': "results/parse_metadata/metadata.txt",
-			'ibd_file': "results/parse_ibd/ibd_pairs_raw.txt"}
-	
-	# check if the input files exist
-	for file in input_files.values():
+	# search for the aadr parsed output file in the results/parse_aadr folder
+	aadr_search = glob.glob(os.path.join("results", "parse_aadr", "*.txt"))
+	# if not found raise an error
+	if not aadr_search:
+		raise FileNotFoundError("No text file found in 'results/parse_aadr/'. Please run parse_aadr.py first. Thank you!")
 
-		# if a file doesn't exist raise an error
-		if not os.path.isfile(file):
-			raise FileNotFoundError(f"Input file {file} not found. Please make sure you read the README and"
-             "run the parsing scripts to create the input files.\n Thank you!")
+	aadr_file = aadr_search[0] # get the first file found in the search (there should only be one file in the folder)
+
+	# do the same for the ibd parsed output file in the results/parse_ibd folder
+	ibd_search = glob.glob(os.path.join("results", "parse_ibd", "*.txt"))
+	if not ibd_search:
+		raise FileNotFoundError("No text file found in 'results/parse_ibd/'. Please run parse_ibd.py first. Thank you!")
+	
+	ibd_file = ibd_search[0]
+
+	# set the input files 
+	input_files = {"aadr_file": aadr_file, "ibd_file": ibd_file}
+	 
+	print(f"Input files found: \nAADR file: {aadr_file}\nIBD file: {ibd_file}\n")
 	
 	# set the output directory 
 	output_dir = "results/database" 
@@ -89,32 +97,13 @@ def get_arguments():
 	return input_files, table_name, script_name
 
 # function for one individual column and to add its group, country and year columns
-def add_group_column(ibd_df, metadata_df, aadr_df, individual, group_column, country_column, year_column):
+def add_group_column(ibd_df, aadr_df, individual, group_column, country_column, year_column):
 
-	column = f"{individual}" # name of the column with the individual (ind1 or ind2)
-	column_master_id = f"{individual}_master_id" # name of the column with the Master ID for the individual
-
-	# merge the df with the metadata to get the Master ID for each individual
-	# we merge on the individual column (ind1 or ind2) and the 'ind' column in the metadata
-	# we keep all rows from the ibd data even if we don't find a match in the metadata
-	df = ibd_df.merge(metadata_df, left_on=individual, right_on='ind', how='left')
-	
-	# rename the Master ID column to be specific for the individual 
-	df = df.rename(columns={'Master ID': column_master_id})
-
-	# we drop the ind column as we have the specific individual column 
-	df = df.drop(columns=['ind'])
-
-	# merge the df with the aadr data to get the group, country and year for each individual
-	# we merge on the Master ID column for the individual and the 'Master ID' column in the aadr data
-	# we keep all rows from the ibd data even if we don't find a match in the aadr data
-	df = df.merge(aadr_df, left_on=column_master_id, right_on='Master ID', how='left')
-
-	# rename the Group ID, country and year columns to be specific for the individual 
+	# merge ibd df with aadr df on the individual column and the Genetic ID column and add the population, country and year info for the individual
+	df = ibd_df.merge(aadr_df, left_on=individual, right_on='Genetic ID', how='left') 
+	# rename the columns to the new names for group, country and year 
 	df = df.rename(columns={'Group ID': group_column, 'country': country_column, 'year': year_column})
-
-	# we drop the Master ID column as we have the specific group column
-	df = df.drop(columns=['Master ID', column_master_id])
+	df = df.drop(columns=['Genetic ID']) # drop the Genetic ID column
 
 	return df
 
@@ -131,23 +120,23 @@ def main():
 
 		# read the input files
 		aadr_df = pd.read_csv(input_files['aadr_file'], sep='\t')
-		metadata_df = pd.read_csv(input_files['metadata_file'], sep='\t')
 		ibd_df = pd.read_csv(input_files['ibd_file'], sep='\t')
 
 		# add group, country and year information for ind1 and ind2
-		merged = add_group_column(ibd_df, metadata_df, aadr_df, 'ind1', 'group1', 'country1', 'year1')
-		merged = add_group_column(merged, metadata_df, aadr_df, 'ind2', 'group2', 'country2', 'year2')
+		merged = add_group_column(ibd_df, aadr_df, 'ind1', 'group1', 'country1', 'year1')
+		merged = add_group_column(merged, aadr_df, 'ind2', 'group2', 'country2', 'year2')
 
-		# we sort the ind, group, country and year columns for ind1 and ind2 to make sure we have one pair per connection
-		cols_to_fix = [(['ind1', 'ind2']), (['group1', 'group2']), (['country1', 'country2']), (['year1', 'year2'])]
+		# deduplicate the rows in the merged dataframe
+		swap = merged['ind1'] > merged['ind2'] # swap the individuals in the pairs so that ind1 is always first alphabetically
+		cols = ['ind', 'group', 'country', 'year'] # the columns to swap for ind1 and ind2
 
-		# loop through the columns 
-		for col1, col2 in cols_to_fix:
-			merged[[col1, col2]] = np.sort(merged[[col1, col2]], axis=1) # sort the two columns in each pair to make sure we have one pair per connection 
+		for col in cols:
+			col1, col2 = f'{col}1', f'{col}2'
+			merged.loc[swap, [col1, col2]] = merged.loc[swap, [col2, col1]].values
 
-			# group by the columns and sum the lengthM to combine rows with the same pair of individuals, groups, countries and years
-			merged = merged.groupby(['ind1', 'ind2', 'group1', 'group2', 'country1', 'country2', 'year1', 'year2'], as_index=False).agg({'lengthM': 'sum'})
-       
+		# group by the merged dataframe to sum the lengthM for duplicate pairs and keep the first values for the other columns 
+		merged = merged.groupby(['ind1', 'ind2', 'group1', 'group2', 'country1', 'country2', 'year1', 'year2'], dropna=False, as_index=False)['lengthM'].sum()
+
 		# keep only the columns we need
 		merged = merged[['ind1', 'group1', 'country1', 'year1', 'ind2', 'group2', 'country2', 'year2', 'lengthM']]
 
@@ -155,21 +144,18 @@ def main():
 
 		# save to sqlite database
 		print(f"Building SQLite database: {table_name}.db. You can find it in the results/database folder")
-		conn = sqlite3.connect(os.path.join("results/database", table_name + ".db"))
+		conn = sqlite3.connect(db_file)
 		merged.to_sql(table_name, conn, if_exists="replace", index=False)
 		conn.close()
 
 		# if there are any missing info we print a message regarding that and how many individuals have missing info
 		missing_group = merged['group1'].isnull().sum() + merged['group2'].isnull().sum()
-		missing_country = merged['country1'].isnull().sum() + merged['country2'].isnull().sum()
-		missing_year = merged['year1'].isnull().sum() + merged['year2'].isnull().sum()
 
-		if missing_group + missing_country + missing_year > 0:
+		if missing_group > 0:
 			print(
 				f"There is some missing information for some individuals in the database.\n"
 				"This is because we don't have complete data for all individuals in the AADR data. They are shown as NULL in the database.\n"
-				f"Rows with missing group: {missing_group} | missing country: {missing_country} | missing year: {missing_year}."
-			)
+				f"Rows with missing group: {missing_group}.")
 
 		print(f"Database successfully created at {table_name}.db\nThank you for using the script!")
 

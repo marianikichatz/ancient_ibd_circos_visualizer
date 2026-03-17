@@ -6,7 +6,7 @@
 
 Script name: parse_aadr.py
 
-Version: 1.00
+Version: 2.00
 Date: 2026-03-10
 Name: Maria Niki Chatzantoni
 
@@ -17,7 +17,7 @@ The script reads the AADR data, processes it, and outputs a file that can be use
 
 Procedure:
 1. Read command line arguments to get the input file and output file paths
-2. Parse the AADR data to extract Master ID, Group ID, country, and year
+2. Parse the AADR data to extract Genetic ID, Group ID, country, and year
 3. Write the parsed data to a tab separated output file
 
 Input:
@@ -92,20 +92,29 @@ def parse_aadr_data(input_file):
         # make all values in the row lowercase and remove leading and trailing whitespaces
         row_values = check_df.iloc[row].astype(str).str.strip().str.lower().tolist()
         
-        # check if the row has the Master ID and iid columns 
-        if 'master id' in row_values and 'group id' in row_values:
+        # check if the row has the Genetic ID and Group ID columns 
+        if 'genetic id' in row_values and 'group id' in row_values:
             header_row = row # set the header row to the current row 
             break
 
-    # if we don't find the Master ID and iid columns in the first 3 rows we raise an error       
+    # if we don't find the Genetic ID and Group ID columns in the first 3 rows we raise an error       
     if header_row is None:
-        raise ValueError("Couldn't find 'Master ID' and 'Group ID' in the first 3 rows of the file. Please provide a valid input file with the required columns. Thank you!")
+        raise ValueError("Couldn't find 'Genetic ID' and 'Group ID' in the first 3 rows of the file. Please provide a valid input file with the required columns. Thank you!")
 
     # read the excel file with the correct header row
     df = pd.read_excel(input_file, header=header_row)
 
+    df['Political Entity'] = df['Political Entity'].astype(str).str.strip()
+    df['Political Entity'] = df['Political Entity'].str.replace('Gernamy', 'Germany', case=False)
+
+    df['Group ID'] = df['Group ID'].astype(str).str.strip()
+    df['Group ID'] = df['Group ID'].str.split('_daughter').str[0]
+    df['Group ID'] = df['Group ID'].str.split('_son').str[0]
+    df['Group ID'] = df['Group ID'].str.split('_brother').str[0]
+    df['Group ID'] = df['Group ID'].str.split('_sister').str[0]
+
     # check if required columns are here
-    required_columns = ['Master ID', 'Group ID', 'Political Entity']
+    required_columns = ['Genetic ID', 'Group ID', 'Political Entity']
 
     for column in required_columns:
         column = column.strip().lower() # remove leading and trailing whitespaces and make lowercase
@@ -122,7 +131,7 @@ def parse_aadr_data(input_file):
     if date_col is None:
         raise ValueError("Could not find the 'Date mean in BP' column in the input file. Please provide a valid input file. Thank you!")
 
-    master_id = df['Master ID'] # get the Master ID column from the dataframe
+    genetic_id = df['Genetic ID'] # get the Genetic ID column from the dataframe
     group_id = df['Group ID'] # get the Group ID column from the dataframe
     country = df['Political Entity'].str.strip() # get the country column from the dataframe
     
@@ -134,18 +143,18 @@ def parse_aadr_data(input_file):
     # create a dictionary to store the parsed AADR data
     aadr_dict = {}
 
-    # loop through the rows of the dataframe and add the master id, group id, country and year to the dictionary
-    for i in range(len(master_id)):
-        aadr_dict[master_id[i]] = {'Group ID': group_id[i], 'country': country[i], 'year': year[i]}
+    # loop through the rows of the dataframe and add the genetic id, group id, country and year to the dictionary
+    for i in range(len(genetic_id)):
+        aadr_dict[genetic_id[i]] = {'Group ID': group_id[i], 'country': country[i], 'year': year[i]}
     
     return aadr_dict
 
 # function to write the output to a file
 def write_output(aadr_dict, output_file):
     with open(output_file, 'w') as f:
-        f.write("Master ID\tGroup ID\tcountry\tyear\n") # write the header
-        for master_id, values in aadr_dict.items():
-            f.write(f"{master_id}\t{values['Group ID']}\t{values['country']}\t{values['year']}\n") # write the data
+        f.write("Genetic ID\tGroup ID\tcountry\tyear\n") # write the header
+        for genetic_id, values in aadr_dict.items():
+            f.write(f"{genetic_id}\t{values['Group ID']}\t{values['country']}\t{values['year']}\n") # write the data
     
     return output_file
 
