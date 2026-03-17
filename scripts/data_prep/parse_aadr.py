@@ -31,7 +31,7 @@ python parse_aadr.py input_file.xlsx output_file.txt[optional] or
 python3 parse_aadr.py input_file.xlsx output_file.txt[optional] 
 
 '''
-
+import numpy as np
 import pandas as pd
 import sys
 import os
@@ -105,12 +105,18 @@ def parse_aadr_data(input_file):
     df = pd.read_excel(input_file, header=header_row)
 
     # clean the data
+    df['Genetic ID'] = df['Genetic ID'].astype(str).str.strip()
     df['Political Entity'] = df['Political Entity'].astype(str).str.strip()
     df['Political Entity'] = df['Political Entity'].str.replace('Gernamy', 'Germany', case=False) # fix typo in country name
 
-    # clean the Group ID column by removing any suffixes that indicate family relationships and removing the .SG suffix that indicates shotgun sequencing data
-    df['Group ID'] = df['Group ID'].astype(str).str.strip().str.replace(r'[_.]?(mother|father|son|daughter|brother|sister|relative|rel).*', '', regex=True, case=False).str.replace(r'\.SG$', '', regex=True, case=False)
+    # clean the Group ID column by removing any suffixes that indicate family relationships, removing the .SG suffix that indicates shotgun sequencing data
+    # removing the .DG suffix that indicates double capture data, removing the .possible suffix that indicates possible contamination 
+    # and removing the .LHO001 suffix that indicates a specific individual that is not assigned to a group
+    tags_to_remove = r"[_.]?(mother|father|son|daughter|brother|sister|sibling|relative|rel|dup|contam|possible|1d|2d|LHO001|SG|DG|enhanced|noUDG|genotyping|in\.preparation).*"
+    df['Group ID'] = (df['Group ID'].astype(str).str.strip().str.replace(tags_to_remove, '', regex=True, case=False))
 
+    df['Group ID'] = (df['Group ID'].replace(["I","","nan","None","NULL"], np.nan)) # replace empty strings and other values with NaN
+    
     # check if required columns are here
     required_columns = ['Genetic ID', 'Group ID', 'Political Entity']
 
