@@ -76,10 +76,10 @@ def get_filter_options(matrix_ind, matrix_pop, mode):
     return all_values, all_countries, year_min, year_max
 
 # set up the title and layout of the app
-st.set_page_config(page_title="IBDConnect", layout="wide")
+st.set_page_config(page_title="🫆IBDConnect", layout="wide")
 
 # write the title and description of the app
-st.title("IBDConnect")
+st.title("🫆IBDConnect")
 st.markdown("##### Visualizing ancient Identity by Descent connections")
 st.markdown("---")
 
