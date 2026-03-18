@@ -30,6 +30,9 @@ Need to install the following Python libraries:
 - pycirclize
 - matplotlib
 - numpy
+- streamlit
+- holoviews
+- bokeh
 
 # Scripts
 

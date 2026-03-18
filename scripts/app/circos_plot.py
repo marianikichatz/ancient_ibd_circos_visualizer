@@ -18,7 +18,7 @@ Procedure:
 4. Get the nodes to plot based on the filtered data and user selection for max nodes and ranking method
 5. Create circos plots for the filtered data
 
-User-defined functions: parse_database(), filter_by_selection(), get_nodes(), create_circos_plot()
+User-defined functions: parse_database(), filter_by_selection(), get_nodes(), normalize_data(), create_circos_plot()
 Non-standard modules: pycirclize, pandas, sqlite3, matplotlib
 
 Input:
@@ -31,8 +31,9 @@ Output:
 
 from pycirclize import Circos
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-import matplotlib.colors as mcolors
+import holoviews as hv
+from holoviews import opts
+hv.extension("bokeh")
 import pandas as pd
 import sqlite3
 
@@ -60,7 +61,7 @@ def parse_database(input_file, min_length, table_name="ibd_connections"):
 
     return matrix_ind, matrix_pop
 
-# function to filter the matrices based on the user's choices
+# function to filter the matrices based on the user"s choices
 def filter_by_selection(matrix_ind, matrix_pop, mode, selected_value=None, selected_country=None, selected_year_min=None, selected_year_max=None):
 
 # if the mode is individuals
@@ -179,15 +180,38 @@ def get_nodes(filtered, mode, selected_value, max_nodes, ranking_method):
             
     return nodes, filtered, big
 
+# function to normalize the IBD values by population size
+def normalize_data(df):
+    norm_df = df.copy() # make a copy of the dataframe
+    # count the number of individuals in each population by creating a dataframe with one row per individual and their population 
+    ind_to_group = pd.concat([norm_df[["ind1", "group1"]].rename(columns={"ind1": "ind", "group1": "group"}),
+        norm_df[["ind2", "group2"]].rename(columns={"ind2": "ind", "group2": "group"})]).drop_duplicates()
+
+    pop_counts = ind_to_group["group"].value_counts() # count the number of individuals in each population
+
+    n1 = norm_df["group1"].map(pop_counts) # get the population size for group1 by mapping the group1 column 
+    n2 = norm_df["group2"].map(pop_counts) # get the population size for group2 by mapping the group2 column
+
+    norm_df["lengthM"] = norm_df["lengthM"] / (n1 * n2) # normalize the lengthM by dividing it by the product of the population sizes 
+
+    return norm_df
+
 # function to create the circos plot for individuals or populations based on the mode
 def create_circos_plot(filtered, mode, selected_value=None, max_nodes=50, ranking_method="Strongest connections (longest IBD)"):
 
 # if the mode is populations 
     if mode == "populations":
-        # group by population pairs 
-        group_data = filtered.groupby(["group1", "group2", "country1", "country2"], as_index=False)
-        # sum the lengthM to get the total IBD between each pair
-        filtered = group_data["lengthM"].sum()
+        filtered = normalize_data(filtered) # normalize the IBD values by population size 
+
+        group_cols = ["group1", "group2"] # set the group columns for grouping
+
+        # loop through the country columns 
+        for col in ["country1", "country2"]:
+            # if they are in the filtered dataframe we add them to the group columns for grouping
+            if col in filtered.columns:
+                group_cols.append(col)
+        # sum the lengthM to get the total IBD between each pair and keep the country info for each pair 
+        filtered = filtered.groupby(group_cols, as_index=False)["lengthM"].sum()
 
     # get the nodes to plot usin gthe function above
     nodes, filtered_data, big = get_nodes(filtered, mode, selected_value, max_nodes, ranking_method)
@@ -197,10 +221,10 @@ def create_circos_plot(filtered, mode, selected_value=None, max_nodes=50, rankin
 # if mode is individuals 
     if mode == "individuals":
         # to get unique connections we keep only the rows where ind1 is less than ind2
-        remove_same = temp_df['ind1'].astype(str) < temp_df['ind2'].astype(str) 
+        remove_same = temp_df["ind1"].astype(str) < temp_df["ind2"].astype(str) 
 # if mode is populations we do the same but for populations 
     else:
-        remove_same = temp_df['group1'].astype(str) < temp_df['group2'].astype(str)
+        remove_same = temp_df["group1"].astype(str) < temp_df["group2"].astype(str)
 
     unique_connections = temp_df[remove_same] # set the unique connections as the rows without the duplicate connections
     num_conn = len(unique_connections) # get the number of unique connections 

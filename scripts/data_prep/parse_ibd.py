@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
-
 #Documentation Section
-
 '''
-
 Script name: parse_ibd.py
 
 Version: 1.00
@@ -32,7 +29,6 @@ Output:
 Useage: 
 python parse_ibd.py ibd220.ibd.v54.1.pub.tsv output_file.txt[optional] or
 python3 parse_ibd.py ibd220.ibd.v54.1.pub.tsv output_file.txt[optional] 
-
 '''
 
 import pandas as pd
@@ -50,7 +46,7 @@ def get_arguments():
     input_file = sys.argv[1]  # get the name of the input file
     
     # check if the input file is a .tsv file
-    if input_file.endswith('.tsv'): 
+    if input_file.endswith(".tsv"): 
         pass
     else:
         raise ValueError("The input file must be a .tsv file. Please provide a valid .tsv file as input. Thank you!")
@@ -67,7 +63,7 @@ def get_arguments():
     # set the full path for the output file
     output_file = os.path.join(output_dir, output_name)
 
-    # create the output directory if it doesn't exist
+    # create the output directory if it doesn"t exist
     os.makedirs(output_dir, exist_ok=True)
     
     # check if the output file already exists and if yes ask the user if they want to overwrite it
@@ -89,21 +85,21 @@ def get_arguments():
 def parse_ibd(input_file, output_file):
 
     # check if the input file is tab separated and if it has the required columns
-    with open(input_file, 'r') as f:
-        header = f.readline().strip().split('\t') # read the header and split by tab
-        required_columns = ['iid1', 'iid2', 'lengthM'] # define the required columns
+    with open(input_file, "r") as f:
+        header = f.readline().strip().split("\t") # read the header and split by tab
+        required_columns = ["iid1", "iid2", "lengthM"] # define the required columns
         
         # check if the needeed columns are in the header
         for column in required_columns:
             if column not in header:
-                raise ValueError(f"The input file must contain the following columns: {', '.join(required_columns)}. Please provide a valid input file. Thank you!")
+                raise ValueError(f"The input file must contain the following columns: {", ".join(required_columns)}. Please provide a valid input file. Thank you!")
 
     # read the input file using pandas 
-    df = pd.read_csv(input_file, sep='\t') # seperate by tab
+    df = pd.read_csv(input_file, sep="\t") # seperate by tab
     # get the columns of the individuals and length in cM
-    ind1 = df['iid1']
-    ind2 = df['iid2']
-    length_cm = df['lengthM']
+    ind1 = df["iid1"]
+    ind2 = df["iid2"]
+    length_cm = df["lengthM"]
     # if the pair is repeated we will add the lengths together
     ibd_pairs = {} # dictionary to store the pairs and their lengths
     # loop trhough the rows of the dataframe 
@@ -132,7 +128,7 @@ def parse_ibd(input_file, output_file):
 
 # function to write the output file
 def write_output(ibd_pairs, output_file):
-    with open(output_file, 'w') as f:
+    with open(output_file, "w") as f:
         f.write("ind1\tind2\tlengthM\n") # write the header
         for ind1, second_dict in ibd_pairs.items():
             for ind2, length in second_dict.items():

@@ -23,13 +23,15 @@ Input:
 
 Output:
 - An interactive Streamlit app that allows users to explore the IBD connections and generate circos plots.
+
+Usage: 
+streamlit run app.py or 
+python app.py or
+python3 app.py
 '''
 
 import streamlit as st
 import pandas as pd
-import tempfile
-import matplotlib.colors as mcolors
-import matplotlib.pyplot as plt
 import os
 from circos_plot import parse_database, filter_by_selection, get_nodes, create_circos_plot
 
@@ -102,20 +104,20 @@ database_path = st.sidebar.text_input("Database path", value="results/database/i
         help="Path to the SQLite database file created by build_database.py. Change this to use your own database.")
 
 table_name = "ibd_connections"
-# user can use a different database file, but they need to specify the table name if it's not the default one
+# user can use a different database file, but they need to specify the table name if it"s not the default one
 if database_path != "results/database/ibd_connections.db":
     table_name = st.sidebar.text_input("Table name", value="ibd_connections", help="Name of the table in your SQLite database")
 
 # check if the database file exists
 if not os.path.exists(database_path):
-    st.error(f"Your database wasn't found at `{database_path}`. Please check the path and try again.")
+    st.error(f"Your database wasn't found at '{database_path}'. Please check the path and try again.")
     st.stop()
 
 # load the full database to get the length range for the slider
 try:
     matrix_ind_full, matrix_pop_full = load_full_database(database_path, table_name) # use the function to load the full database
 except Exception as e:
-    st.error(f"Could not load the database: {e}") # if can't load the database show an error message
+    st.error(f"Could not load the database: {e}") # if can"t load the database show an error message
     st.stop()
 
 # check if the required columns are in the database
@@ -128,7 +130,7 @@ for col in required_columns:
         missing_columns.append(col)
 # if there are missing columns show an error message 
 if missing_columns:
-    st.error(f"The database is missing the following required columns: {', '.join(missing_columns)}. Please check your database and try again.")
+    st.error(f"The database is missing the following required columns: {", ".join(missing_columns)}. Please check your database and try again.")
     st.stop()
 
 # get the length range from the full data
@@ -217,22 +219,22 @@ if generate:
         # if there are connections we show the plot and the number of connections being plotted
         else:
             fig, big, nodes, node_colors, num_conn = results
-            # show how many connections are being plotted
+
+        # if there are too many connections we show a message to the user 
+            if big:
+                st.info(f"Too many connections!! Showing the top {max_nodes} nodes using {ranking_method}"
+                        f"You can adjust the number of nodes or the ranking method in the sidebar and regenerate the plot.")
+                st.write("Use the filters in the sidebar to customize your visualization, "
+                    "then click **Generate Circos Plot** to view the IBD connections!")
+                        
+                # show how many connections are being plotted
             st.write(f"Showing **{num_conn} IBD connections** for the selected filters.")
             st.pyplot(fig)
 
             fig.savefig("circos_plot.png", dpi=150, bbox_inches="tight")
             with open("circos_plot.png", "rb") as f:
                 st.download_button("Download plot as PNG", f, "circos_plot.png", "image/png")
-
-        # if there are too many connections we show a message to the user 
-        if big:
-            st.info(f"Too many connections!! Showing the top {max_nodes} nodes using '{ranking_method}'. "
-                    f"You can adjust the number of nodes or the ranking method in the sidebar and regenerate the plot.")
-
-    except ValueError as e:
-        st.error(f"Error generating circos plot: {e}")
-
-else:
-    st.write("Use the filters in the sidebar to customize your visualization, "
-             "then click **Generate Circos Plot** to view the IBD connections!")
+            
+    
+    except Exception as e:
+        st.error(f"An error occurred while generating the plot: {e}")
