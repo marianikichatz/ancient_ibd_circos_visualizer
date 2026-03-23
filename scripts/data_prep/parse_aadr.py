@@ -96,7 +96,7 @@ def parse_aadr_data(input_file):
 
     # if we don"t find the Genetic ID and Group ID columns in the first 3 rows we raise an error       
     if header_row is None:
-        raise ValueError("Couldn"t find "Genetic ID" and "Group ID" in the first 3 rows of the file. Please provide a valid input file with the required columns. Thank you!")
+        raise ValueError("Couldn't find 'Genetic ID' and 'Group ID' in the first 3 rows of the file. Please provide a valid input file with the required columns. Thank you!")
 
     # read the excel file with the correct header row
     df = pd.read_excel(input_file, header=header_row)
@@ -130,7 +130,7 @@ def parse_aadr_data(input_file):
             break
     
     if date_col is None:
-        raise ValueError("Could not find the "Date mean in BP" column in the input file. Please provide a valid input file. Thank you!")
+        raise ValueError("Could not find the 'Date mean in BP' column in the input file. Please provide a valid input file. Thank you!")
 
     genetic_id = df["Genetic ID"] # get the Genetic ID column from the dataframe
     group_id = df["Group ID"] # get the Group ID column from the dataframe

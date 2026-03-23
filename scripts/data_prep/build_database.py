@@ -55,14 +55,14 @@ def get_arguments():
 	aadr_search = glob.glob(os.path.join("results", "parse_aadr", "*.txt"))
 	# if not found raise an error
 	if not aadr_search:
-		raise FileNotFoundError("No text file found in "results/parse_aadr/". Please run parse_aadr.py first. Thank you!")
+		raise FileNotFoundError("No text file found in 'results/parse_aadr/'. Please run parse_aadr.py first. Thank you!")
 
 	aadr_file = aadr_search[0] # get the first file found in the search (there should only be one file in the folder)
 
 	# do the same for the ibd parsed output file in the results/parse_ibd folder
 	ibd_search = glob.glob(os.path.join("results", "parse_ibd", "*.txt"))
 	if not ibd_search:
-		raise FileNotFoundError("No text file found in "results/parse_ibd/". Please run parse_ibd.py first. Thank you!")
+		raise FileNotFoundError("No text file found in 'results/parse_ibd/'. Please run parse_ibd.py first. Thank you!")
 	
 	ibd_file = ibd_search[0]
 
@@ -98,9 +98,9 @@ def add_group_column(ibd_df, aadr_df, individual, group_column, country_column, 
 
 	# merge ibd df with aadr df on the individual column and the Genetic ID column and add the population, country and year info for the individual
 	df = ibd_df.merge(aadr_df, left_on=individual, right_on="Genetic ID", how="left") 
+	df = df.drop(columns=["Genetic ID"]) # drop the Genetic ID column
 	# rename the columns to the new names for group, country and year 
 	df = df.rename(columns={"Group ID": group_column, "country": country_column, "year": year_column})
-	df = df.drop(columns=["Genetic ID"]) # drop the Genetic ID column
 
 	return df
 
@@ -149,9 +149,8 @@ def main():
 		missing_group = merged["group1"].isnull().sum() + merged["group2"].isnull().sum()
 
 		if missing_group > 0:
-			print(
-				f"There is some missing information for some individuals in the database.\n"
-				"This is because we don"t have complete data for all individuals in the AADR data. They are shown as NULL in the database.\n"
+			print(f"There is some missing information for some individuals in the database.\n"
+				"This is because we don't have complete data for all individuals in the AADR data. They are shown as NULL in the database.\n"
 				f"Rows with missing group: {missing_group}.")
 
 		print(f"Database successfully created at {table_name}.db\nThank you for using the script!")

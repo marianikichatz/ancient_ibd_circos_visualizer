@@ -20,6 +20,8 @@ Each row represents a genomic segment shared between two individuals that is inh
 
 The AADR (Ancient Admixture and Relatedness) data, which informs about the populations of the individuals depending on their Genetic IDs, can be found here: [AADR Data](https://lunduniversityo365-my.sharepoint.com/personal/er2374el_lu_se/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fer2374el%5Flu%5Fse%2FDocuments%2FStudents%2FBINP29%20%2D%20DNA%20Sequencing%20Informatics%20II%2FStudent%20projects%2FProjetcFiles%2FAADR%5F54%2E1&viewid=31986752%2D1a4a%2D4d9b%2D995e%2Db5bbf4dec0b9),  under the name `AADR Annotations 2025.xlsx`
 
+If you want to try IBDConnect without downloading the full dataset, you can use the test datasets provided in the `test` folder of the project repository. These test datasets are completely synthetic and contain only a few rows of data, but they follow the same format as the original datasets, so you can use them to test the functionality of the scripts and the Streamlit app.
+
 # Software used and Dependencies
 
 Python version 3.10 or higher is required to run the scripts in this project.
@@ -104,7 +106,7 @@ python scripts/data_prep/parse_ibd.py data/ibd_data.tsv
 # Step 2: Parse the AADR data
 python scripts/data_prep/parse_aadr.py data/AADR_Annotations_2025.xlsx
 # Step 3: Build the SQLite database
-python scripts/data_prep/build_database.py results/parsed_ibd/ibd_pairs_raw.txt results/parsed_aadr/aadr_data.txt 
+python scripts/data_prep/build_database.py 
 # Step 4: Run the Streamlit app to visualize the circos plots
 streamlit run scripts/app/app.py
 ```
@@ -117,7 +119,7 @@ The output of the project includes:
 
 # Limitations and Future Work
 ## Limitations:
-- The app may be slow with very large datasets since all filtering and plotting is done in memory
+- The app may be slow with very large datasets since all plotting is done in memory
 - Population normalization in population mode assumes each individual belongs to exactly one population, which may not always be the case
 - The app currently only supports SQLite databases built with the provided pipeline — custom databases must follow the exact column structure
 - The circos plot is limited to a maximum of 200 nodes per plot due to rendering constraints in pycirclize 
